@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-sky-100 min-h-screen">
+    <div class="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8"
+         x-data="{
+            todos: JSON.parse(localStorage.getItem('todos') || '[]'),
+            newTodo: '',
+            filter: 'all', // 'all', 'active', 'completed'
+            
+            saveTodos() {
+                localStorage.setItem('todos', JSON.stringify(this.todos));
+            },
+            
+            addTodo() {
+                if (this.newTodo.trim() !== '') {
+                    this.todos.unshift({
+                        id: Date.now(),
+                        text: this.newTodo,
+                        completed: false
+                    });
+                    this.newTodo = '';
+                    this.saveTodos();
+                }
+            },
+            
+            removeTodo(id) {
+                this.todos = this.todos.filter(todo => todo.id !== id);
+                this.saveTodos();
+            },
+            
+            toggleTodo(todo) {
+                todo.completed = !todo.completed;
+                this.saveTodos();
+            },
+
+            clearCompleted() {
+                this.todos = this.todos.filter(todo => !todo.completed);
+                this.saveTodos();
+            },
+
+            filteredTodos() {
+                return this.todos.filter(todo => {
+                    if (this.filter === 'active') return !todo.completed;
+                    if (this.filter === 'completed') return todo.completed;
+                    return true;
+                });
+            }
+         }">
+        
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <!-- En-tête -->
+            <div class="bg-gradient-to-r from-blue-400 to-blue-900 p-6 text-white">
+                <h1 class="text-3xl font-bold mb-4">Ma Todo List</h1>
+                
+                <!-- Formulaire d'ajout -->
+                <div class="relative">
+                    <input type="text" 
+                           x-model="newTodo"
+                           @keyup.enter="addTodo()"
+                           class="w-full pl-4 pr-12 py-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
+                           placeholder="Que souhaitez-vous faire ?">
+                    <button @click="addTodo()"
+                            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="flex justify-center gap-2 p-4 bg-gray-50 border-b">
+                <button @click="filter = 'all'"
+                        :class="{'bg-blue-500 text-white': filter === 'all', 'bg-gray-100 text-gray-600': filter !== 'all'}"
+                        class="px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                    Toutes
+                </button>
+                <button @click="filter = 'active'"
+                        :class="{'bg-blue-500 text-white': filter === 'active', 'bg-gray-100 text-gray-600': filter !== 'active'}"
+                        class="px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                    À faire
+                </button>
+                <button @click="filter = 'completed'"
+                        :class="{'bg-blue-500 text-white': filter === 'completed', 'bg-gray-100 text-gray-600': filter !== 'completed'}"
+                        class="px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                    Terminées
+                </button>
+            </div>
+
+            <!-- Liste des tâches -->
+            <div class="divide-y divide-gray-100">
+                <template x-for="(todo, index) in filteredTodos()" :key="todo.id">
+                    <div class="flex items-center p-4 group transition-colors"
+                         :class="{
+                            'bg-white': index % 2 === 0,
+                            'bg-blue-50/50': index % 2 === 1,
+                            'hover:bg-gray-50': index % 2 === 0,
+                            'hover:bg-blue-100/50': index % 2 === 1,
+                            'bg-gray-50': todo.completed
+                         }">
+                        <div class="flex items-center flex-1">
+                            <button @click="toggleTodo(todo)"
+                                    class="w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center"
+                                    :class="{'border-blue-500 bg-blue-500': todo.completed, 'border-gray-300': !todo.completed}">
+                                <i class="fas fa-check text-white text-sm" x-show="todo.completed"></i>
+                            </button>
+                            <span x-text="todo.text"
+                                  class="text-gray-800 transition-all"
+                                  :class="{'line-through text-gray-400': todo.completed}">
+                            </span>
+                        </div>
+                        <button @click="removeTodo(todo.id)"
+                                class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Pied de page -->
+            <div class="p-4 bg-gray-50 flex justify-between items-center text-sm text-gray-600">
+                <div>
+                    <span x-text="todos.filter(t => !t.completed).length"></span> tâche(s) restante(s)
+                </div>
+                <button @click="clearCompleted()"
+                        x-show="todos.some(t => t.completed)"
+                        class="text-blue-500 hover:text-blue-600">
+                    Supprimer les tâches terminées
+                </button>
+            </div>
+        </div>
+
+        <!-- Message si aucune tâche -->
+        <div x-show="todos.length === 0" 
+             class="text-center p-8 text-gray-500">
+            <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+            <p>Aucune tâche pour le moment</p>
+        </div>
+    </div>
+</body>
+</html>
